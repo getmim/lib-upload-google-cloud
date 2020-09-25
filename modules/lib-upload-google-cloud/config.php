@@ -2,7 +2,7 @@
 
 return [
     '__name' => 'lib-upload-google-cloud',
-    '__version' => '0.0.1',
+    '__version' => '0.1.0',
     '__git' => 'git@github.com:getmim/lib-upload-google-cloud.git',
     '__license' => 'MIT',
     '__author' => [
@@ -47,6 +47,11 @@ return [
                     'class' => 'LibUploadGoogleCloud\\Library\\Keeper'
                 ]
             ]
+        ]
+    ],
+    'libMedia' => [
+        'handlers' => [
+            'google-cloud' => 'LibUploadGoogleCloud\\Library\\Handler'
         ]
     ]
 ];

@@ -23,3 +23,8 @@ return [
     ]
 ];
 ```
+
+## TODO
+
+1. Image Resize
+1. Image WebP Compress
