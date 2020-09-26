@@ -7,7 +7,6 @@
 
 namespace LibUploadGoogleCloud\Library;
 
-// use Google\Cloud\Storage\StorageClient;
 use LibGoogleCloud\Library\Auth;
 use LibCurl\Library\Curl;
 
@@ -73,7 +72,8 @@ class Keeper implements \LibUpload\Iface\Keeper
                 'file' => new \CURLFile($file->source, $file->type, $file->name)
             ],
             'query' => [
-                'uploadType' => 'multipart'
+                'uploadType' => 'multipart',
+                'predefinedAcl' => 'publicRead'
             ]
         ];
 
@@ -86,20 +86,4 @@ class Keeper implements \LibUpload\Iface\Keeper
 
         return self::$host . $bucket . '/' . $result->name;
     }
-
-    // static function save(object $file): ?string{
-    //     $config    = \Mim::$app->config->libUploadGoogleCloud;
-        
-    //     $cert_file = self::getCertFile();
-
-    //     $store  = new StorageClient(['keyFilePath'=>$cert_file]);
-        
-    //     $bucket = $store->bucket($config->bucket);
-    //     $bucket->update([ 'cors' => [ [] ] ]);
-
-    //     $f = fopen($file->source, 'r');
-    //     $object = $bucket->upload($f, ['name'=>$file->target]);
-
-    //     return self::$host . $config->bucket . '/' . $object->name();
-    // }
 }

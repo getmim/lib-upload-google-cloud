@@ -7,114 +7,70 @@
 
 namespace LibUploadGoogleCloud\Library;
 
-use \claviska\SimpleImage;
-use LibUpload\Model\Media as _Media;
+use LibGoogleCloud\Library\Auth;
+use LibCurl\Library\Curl;
 
 class Handler implements \LibMedia\Iface\Handler
 {
     private static $host  = 'https://storage.googleapis.com/';
+    private static $scope = 'https://www.googleapis.com/auth/devstorage.full_control';
 
-    private static function compress(object $result): object{
-        return $result;
-    }
+    private static $last_local_file;
 
-    private static function imageCompress(object $result, bool $force=false): object{
-        if( $webp = self::makeWebP($result, $force) )
-            $result->webp = $webp;
-
-        return self::compress($result);
-    }
-
-    private static function makeWebP(object $result, bool $force=false): object{
-        return self::compress($result);
-    }
-
-    static function get(object $opt): ?object{
+    static function getPath(string $url): ?string{
         $config   = \Mim::$app->config->libUploadGoogleCloud;
         $host     = self::$host . $config->bucket . '/';
-        $base     = (object)['host'=>$host];
         $host_len = strlen($host);
 
-        $file_host= substr($opt->file, 0, $host_len);
-        if($file_host != $host)
+        if(substr($url, 0, $host_len) != $host)
             return null;
 
-        $base_file = substr($opt->file, $host_len);
-        $file_name = basename($base_file);
-        $file_id   = preg_replace('!\..+$!', '', $file_name);
+        return substr($url, $host_len);
+    }
 
-        $media = _Media::getOne(['identity'=>$file_id]);
-        if(!$media)
-            return null;
+    static function getLocalPath(string $path): ?string{
+        $local_path = tempnam(sys_get_temp_dir(), 'mim-lib-upload-google-cloud-');
+        $config     = \Mim::$app->config->libUploadGoogleCloud;
+        $cert_file  = Keeper::getCertFile();
+        $bucket     = $config->bucket;
+        $token      = Auth::get($cert_file, self::$scope);
 
-        $file_mime = $media->mime;
-        $is_image  = fnmatch('image/*', $file_mime);
+        $object_name= urlencode($path);
 
-        $result = (object)[
-            'base' => $base_file,
-            'none' => $base->host . $base_file
+        $c_opt      = [
+            'url'      => 'https://storage.googleapis.com/storage/v1/b/' . $bucket . '/o/' . $object_name,
+            'method'   => 'GET',
+            'query'    => [
+                'alt'   => 'media'
+            ],
+            'headers'  => [
+                'Authorization' => 'Bearer ' . $token
+            ],
+            'download' => $local_path
         ];
 
-        if(!$is_image)
-            return self::compress($result);
+        $result = Curl::fetch($c_opt);
+        if(!$result)
+            return self::setError('Unable to reach google cloud storage server');
 
-        list($i_width, $i_height) = [$media->width, $media->height];
-        $result->size = (object)[
-            'width'  => $media->width,
-            'height' => $media->height
-        ];
+        self::$last_local_file = $local_path;
 
-        if(!isset($opt->size))
-            return self::makeWebP($result);
+        return $local_path;
+    }
 
-        $t_width  = $opt->size->width ?? null;
-        $t_height = $opt->size->height ?? null;
+    static function isLazySizer(string $path, int $width=null, int $height=null, string $compress=null): ?string{
+        return null;
+    }
 
-        if(!$t_width)
-            $t_width = ceil($i_width * $t_height / $i_height);
-        if(!$t_height)
-            $t_height = ceil($i_height * $t_width / $i_width);
+    static function upload(string $local, string $name): ?string{
+        if(self::$last_local_file && is_file(self::$last_local_file))
+            unlink(self::$last_local_file);
 
-        if($t_width == $i_width && $t_height == $i_height)
-            return self::makeWebP($result);
-
-        $suffix    = '_' . $t_width . 'x' . $t_height;
-        $base_file = preg_replace('!\.[a-zA-Z]+$!', $suffix . '$0', $base_file);
-
-        $result->none = $base->host . $base_file;
-        $file_abs     = $base_file;
-        $file_ori_abs = $result->base;
-
-        $result->base = $file_abs;
-
-        $c_width  = $media->width;
-        $c_height = $media->height;
-
-        if($c_width == $t_width && $c_height == $t_height)
-            return self::makeWebP($result);
-
-        // $exists = MASize::get([
-        //     'media' => $media->id,
-        //     'size'  => $t_width . 'x' . $t_height
-        // ]);
-        // if($exists)
-        //     return self::makeWebP($result);
-
-        // self::resizeImage((object)[
-        //     'path'   => $result->base,
-        //     'mime'   => $file_mime,
-        //     'source' => $opt->file,
-        //     'width'  => $t_width,
-        //     'height' => $t_height
-        // ]);
-
-        // MASize::create([
-        //     'user'      => (\Mim::$app->user->id ?? 0),
-        //     'media'     => $media->id,
-        //     'size'      => $t_width . 'x' . $t_height,
-        //     'compress'  => 'none'
-        // ]);
-
-        return self::makeWebP($result);
+        return Keeper::save((object)[
+            'target' => $name,
+            'source' => $local,
+            'type'   => mime_content_type($local),
+            'name'   => basename($name)
+        ]);
     }
 }
