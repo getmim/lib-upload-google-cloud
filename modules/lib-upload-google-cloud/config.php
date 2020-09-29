@@ -2,7 +2,7 @@
 
 return [
     '__name' => 'lib-upload-google-cloud',
-    '__version' => '0.2.0',
+    '__version' => '0.2.1',
     '__git' => 'git@github.com:getmim/lib-upload-google-cloud.git',
     '__license' => 'MIT',
     '__author' => [

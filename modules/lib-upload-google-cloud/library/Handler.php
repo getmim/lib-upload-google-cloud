@@ -58,7 +58,7 @@ class Handler implements \LibMedia\Iface\Handler
         return $local_path;
     }
 
-    static function isLazySizer(string $path, int $width=null, int $height=null, string $compress=null): ?string{
+    static function getLazySizer(string $path, int $width=null, int $height=null, string $compress=null, bool $force=false): ?string{
         return null;
     }
 
