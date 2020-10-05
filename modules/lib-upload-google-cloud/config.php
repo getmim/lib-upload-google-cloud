@@ -2,7 +2,7 @@
 
 return [
     '__name' => 'lib-upload-google-cloud',
-    '__version' => '0.2.1',
+    '__version' => '0.2.2',
     '__git' => 'git@github.com:getmim/lib-upload-google-cloud.git',
     '__license' => 'MIT',
     '__author' => [
@@ -52,6 +52,24 @@ return [
     'libMedia' => [
         'handlers' => [
             'google-cloud' => 'LibUploadGoogleCloud\\Library\\Handler'
+        ]
+    ],
+    '__inject' => [
+        [
+            'name' => 'libUploadGoogleCloud',
+            'children' => [
+                [
+                    'name' => 'bucket',
+                    'question' => 'Bucket name',
+                    'rule' => '!^.+$!'
+                ],
+                [
+                    'name' => 'cert_file',
+                    'question' => 'Path to google service json file',
+                    'default' => 'etc/cert/credentials.json',
+                    'rule' => '!^.+$!'
+                ]
+            ]
         ]
     ]
 ];
